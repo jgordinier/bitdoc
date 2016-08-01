@@ -19,12 +19,13 @@ main =
 -- MODEL
 
 type alias Model =
-    { title: String
-    , content: String }
+    { id : String
+    , title : String
+    , content : String }
 
 init : String -> (Model, Cmd Msg)
-init title =
-    ( Model title "loading...", getDocument title )
+init id =
+    ( Model id "Loading" "Please wait...", getDocument id )
 
 type alias DocumentFields =
     { title : String
@@ -45,9 +46,9 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
         GetDocument ->
-            (model, getDocument model.title)
+            (model, getDocument model.id)
         FetchSucceed fields ->
-            (Model fields.title fields.content, Cmd.none)
+            (Model model.id fields.title fields.content, Cmd.none)
         FetchFail _ ->
             (model, Cmd.none)
 
@@ -89,9 +90,8 @@ contentfulGetById id =
     }
 
 getDocument : String -> Cmd Msg
-getDocument title =
-    let id = "6dykQ6RfdCc8e2cQYsACky"
-    in Task.perform FetchFail FetchSucceed (Http.fromJson documentDecoder (Http.send Http.defaultSettings (contentfulGetById id)))
+getDocument id =
+    Task.perform FetchFail FetchSucceed (Http.fromJson documentDecoder (Http.send Http.defaultSettings (contentfulGetById id)))
 
 
 documentDecoder : Json.Decoder DocumentFields
