@@ -38,7 +38,9 @@ type alias Model =
     , slug : String
     , title : String
     , content : String
-    , mainNav : Navigation }
+    , mainNav : Navigation
+    , subNav : Navigation
+    }
 
 type alias Navigation = List NavigationItem
 
@@ -50,7 +52,7 @@ type alias NavigationItem =
 
 init : Result String String -> (Model, Cmd Msg)
 init slug =
-    ( Model "" "" "" "Loading" "Please wait..." [], getDocumentRoot )
+    ( Model "" "" "" "Loading" "Please wait..." [] [], getDocumentRoot )
 
 -- UPDATE
 
@@ -70,10 +72,13 @@ update msg model =
             case List.head queryResult of
                 Just item -> let newModel = toModel item
                              in ( { newModel | mainNav = model.mainNav }, getNavigation newModel.id )
-                Nothing -> (Model model.id model.version model.slug "Not found" "The specified document was not found" model.mainNav, Cmd.none)
+                Nothing -> (Model model.id model.version model.slug "Not found" "The specified document was not found" model.mainNav model.subNav, Cmd.none)
 
         FetchNavigation queryResult ->
-            ( { model | mainNav = List.map toNavigationItem queryResult }, Cmd.none )
+            if List.isEmpty model.mainNav then
+                ( { model | mainNav = List.map toNavigationItem queryResult }, Cmd.none )
+            else
+                ( { model | subNav = List.map toNavigationItem queryResult }, Cmd.none )
 
         FetchFail _ ->
             (model, Cmd.none)
@@ -92,13 +97,14 @@ view model =
         [ a [href "#/documentation"] [
             h1 [] [text "bit-lang documentation v0.0"]
           ]
-        , mainNav model.mainNav
+        , navigation "main-navigation" model.mainNav
+        , navigation "sub-navigation" model.subNav
         , h2 [class "document-title"] [text model.title]
         , div [] [ Markdown.toHtml [] model.content ]
         ]
 
-mainNav items =
-    ul [class "top-navigation"]
+navigation className items =
+    ul [class className]
         (List.map ( \l -> li [] [a [href (toUrl l.slug)] [text l.title]] ) items)
 
 -- SUBSCRIPTIONS
@@ -168,7 +174,7 @@ fieldsDecoder =
         ( "content" := Json.string )
 
 toModel : ResultItem -> Model
-toModel result = Model result.sys.id result.fields.version result.fields.slug result.fields.title result.fields.content []
+toModel result = Model result.sys.id result.fields.version result.fields.slug result.fields.title result.fields.content [] []
 
 toNavigationItem : ResultItem -> NavigationItem
 toNavigationItem result = NavigationItem result.fields.version result.fields.slug result.fields.title
