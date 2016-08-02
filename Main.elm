@@ -2,6 +2,8 @@ import Html exposing (..)
 import Html.App as App
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Navigation
+import String
 import Http
 import Markdown
 import Json.Decode as Json
@@ -9,12 +11,24 @@ import Json.Decode exposing ((:=))
 import Task
 
 main =
-    App.program
-        { init = init "6rPDH1vP9YuOQAqqWmaQOi"
+    Navigation.program urlParser
+        { init = init 
         , view = view
         , update = update
+        , urlUpdate = urlUpdate
         , subscriptions = subscriptions
         }
+
+-- URL PARSERS
+
+toUrl : String -> String
+toUrl id = "#/" ++ id
+
+fromUrl : String -> String
+fromUrl url = String.right 22 url
+
+urlParser : Navigation.Parser String
+urlParser = Navigation.makeParser (fromUrl << .hash)
 
 -- MODEL
 
@@ -25,7 +39,7 @@ type alias Model =
 
 init : String -> (Model, Cmd Msg)
 init id =
-    ( Model id "Loading" "Please wait...", getDocument id )
+    ( Model "6rPDH1vP9YuOQAqqWmaQOi" "Loading" "Please wait...", getDocument "6rPDH1vP9YuOQAqqWmaQOi" )
 
 type alias DocumentFields =
     { title : String
@@ -52,12 +66,16 @@ update msg model =
         FetchFail _ ->
             (model, Cmd.none)
 
+urlUpdate : String -> Model -> (Model, Cmd Msg)
+urlUpdate id model =
+    update GetDocument { model | id = id }
+
 -- VIEW
 
 view : Model -> Html Msg
 view model =
     div []
-        [ a [href "6rPDH1vP9YuOQAqqWmaQOi"] [
+        [ a [href "#/6rPDH1vP9YuOQAqqWmaQOi"] [
             h1 [] [text "bit-lang documentation v0.0"]
           ]
         , menu
@@ -67,9 +85,9 @@ view model =
 
 menu =
     ul [class "top-navigation"]
-        [ li [] [a [href "6dykQ6RfdCc8e2cQYsACky"] [text "Language"]]
-        , li [] [a [href "25y6y2ecp2yse0i8Ww2GUC"] [text "Modules"]]
-        , li [] [a [href "3UjGDZMzRK0guqOSE8gcYY"] [text "Examples"]]
+        [ li [] [a [href "#/6dykQ6RfdCc8e2cQYsACky"] [text "Language"]]
+        , li [] [a [href "#/25y6y2ecp2yse0i8Ww2GUC"] [text "Modules"]]
+        , li [] [a [href "#/3UjGDZMzRK0guqOSE8gcYY"] [text "Examples"]]
   ]
 
 -- SUBSCRIPTIONS
