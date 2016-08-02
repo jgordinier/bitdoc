@@ -8,7 +8,7 @@ import Http
 import Markdown
 import Json.Decode as Json
 import Json.Decode exposing ((:=))
-import Task
+import Task exposing (..)
 
 main =
     Navigation.program urlParser
@@ -33,28 +33,24 @@ urlParser = Navigation.makeParser (fromUrl << .hash)
 -- MODEL
 
 type alias Model =
-    { slug : String
+    { id : String
+    , version : String
+    , slug : String
     , title : String
-    , content : String }
+    , content : String
+    , mainNav : Navigation }
+
+type alias Navigation = List String
 
 init : Result String String -> (Model, Cmd Msg)
 init slug =
-    ( Model "" "Loading" "Please wait...", getDocumentRoot )
-
-type alias DocumentFields =
-    { title : String
-    , slug : String
-    , version: String
-    , content: String
-    }
-
-defaultDocument = DocumentFields "Here be dragons" "" "Failed to parse json from Contentful"
+    ( Model "" "" "" "Loading" "Please wait..." [], getDocumentRoot )
 
 -- UPDATE
 
 type Msg
     = GetDocument
-    | FetchSucceed (List DocumentFields)
+    | FetchSucceed QueryResult
     | FetchFail Http.Error
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -62,10 +58,12 @@ update msg model =
     case msg of
         GetDocument ->
             (model, getDocumentBySlug model.slug)
-        FetchSucceed docs ->
-            case List.head docs of
-                Just fields -> (Model model.slug fields.title fields.content, Cmd.none)
-                Nothing -> (Model model.slug "Not found" "The specified document was not found", Cmd.none)
+        FetchSucceed queryResult ->
+            case List.head queryResult of
+                -- Just m -> ({ m | mainNav = model.mainNav }, Cmd.none)
+                Just item -> let newModel = toModel item
+                             in ( { newModel | mainNav = model.mainNav }, Cmd.none )
+                Nothing -> (Model model.id model.version model.slug "Not found" "The specified document was not found" model.mainNav, Cmd.none)
         FetchFail _ ->
             (model, Cmd.none)
 
@@ -73,7 +71,7 @@ urlUpdate : (Result String String) -> Model -> (Model, Cmd Msg)
 urlUpdate urlResult model =
     case urlResult of
         Ok slug -> update GetDocument { model | slug = slug }
-        Err message -> (Model "error" "Failed to find document" message, Cmd.none)
+        Err message -> ({ model | title = "Error", content = message }, Cmd.none)
 
 -- VIEW
 
@@ -111,21 +109,55 @@ getDocumentsQuery params =
 
 getDocumentRoot : Cmd Msg
 getDocumentRoot =
-    Task.perform FetchFail FetchSucceed (Http.get queryDocumentDecoder (getDocumentsQuery [("fields.parent[exists]", "false"), ("include", "0"), ("order", "-fields.version")]))
+    Task.perform FetchFail FetchSucceed (Http.get queryResultDecoder (getDocumentsQuery [("fields.parent[exists]", "false"), ("include", "0"), ("order", "-fields.version")]))
+
+getNavigation : String -> Cmd Msg
+getNavigation rootId =
+    Task.perform FetchFail FetchSucceed (Http.get queryResultDecoder (getDocumentsQuery [("fields.parent.sys.id", rootId), ("include", "0")]))
 
 getDocumentBySlug : String -> Cmd Msg
 getDocumentBySlug slug =
-    Task.perform FetchFail FetchSucceed (Http.get queryDocumentDecoder (getDocumentsQuery [("fields.slug", slug), ("include", "0"), ("limit", "1")]))
+    Task.perform FetchFail FetchSucceed (Http.get queryResultDecoder (getDocumentsQuery [("fields.slug", slug), ("include", "0"), ("limit", "1")]))
 
-documentDecoder : Json.Decoder DocumentFields
-documentDecoder =
-    let decoder = Json.object4 DocumentFields
-                    ( "title" := Json.string )
-                    ( "slug" := Json.string )
-                    ( "version" := Json.string )
-                    ( "content" := Json.string )
-    in Json.at ["fields"] decoder
 
-queryDocumentDecoder : Json.Decoder (List DocumentFields)
-queryDocumentDecoder =
-    Json.at ["items"] (Json.list documentDecoder)
+-- JSON decoding
+type alias QueryResult = List ResultItem
+
+type alias ResultItem =
+    { sys : SysResult
+    , fields : FieldsResult }
+
+type alias SysResult =
+    { id : String
+    }
+
+type alias FieldsResult =
+    { title : String
+    , slug : String
+    , version : String
+    , content : String
+    }       
+
+queryResultDecoder : Json.Decoder QueryResult
+queryResultDecoder =
+    Json.at ["items"] (Json.list itemDecoder)
+
+itemDecoder : Json.Decoder ResultItem
+itemDecoder =
+    Json.object2 ResultItem
+        ( "sys" := sysDecoder )
+        ( "fields" := fieldsDecoder )
+
+sysDecoder : Json.Decoder SysResult
+sysDecoder = Json.object1 SysResult ( "id" := Json.string )
+
+fieldsDecoder : Json.Decoder FieldsResult
+fieldsDecoder =
+    Json.object4 FieldsResult
+        ( "title" := Json.string )
+        ( "slug" := Json.string )
+        ( "version" := Json.string )
+        ( "content" := Json.string )
+
+toModel : ResultItem -> Model
+toModel result = Model result.sys.id result.fields.version result.fields.slug result.fields.title result.fields.content []
