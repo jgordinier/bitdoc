@@ -71,14 +71,27 @@ update msg model =
         FetchSucceed queryResult ->
             case List.head queryResult of
                 Just item -> let newModel = toModel item
-                             in ( { newModel | mainNav = model.mainNav }, getNavigation newModel.id )
+                             in ( { newModel | mainNav = model.mainNav, subNav = model.subNav }, getNavigation newModel.id )
                 Nothing -> (Model model.id model.version model.slug "Not found" "The specified document was not found" model.mainNav model.subNav, Cmd.none)
 
         FetchNavigation queryResult ->
-            if List.isEmpty model.mainNav then
-                ( { model | mainNav = List.map toNavigationItem queryResult }, Cmd.none )
-            else
-                ( { model | subNav = List.map toNavigationItem queryResult }, Cmd.none )
+            let newMenu = List.map toNavigationItem queryResult
+            in
+                if List.isEmpty queryResult then
+                   -- do not clear sub menu when there is no further sub navigation
+                   ( model, Cmd.none )
+
+                else
+                    if List.isEmpty model.mainNav then
+                        -- first populate the main nav before populating sub nav
+                        ( { model | mainNav = newMenu }, Cmd.none )
+                    else
+                        if newMenu == model.mainNav then
+                           -- do not populate sub nav with same content as in main nav
+                           ( { model | subNav = [] }, Cmd.none )
+                        else
+                            -- all first level navigations should display their sub pages in sub nav
+                            ( { model | subNav = newMenu }, Cmd.none )
 
         FetchFail _ ->
             (model, Cmd.none)
