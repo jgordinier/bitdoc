@@ -22,7 +22,7 @@ main =
 -- URL PARSERS
 
 toUrl : String -> String
-toUrl id = "#/" ++ id
+toUrl slug = "#/" ++ slug
 
 fromUrl : String -> (Result String String)
 fromUrl url = Result.fromMaybe ("Error parsing url: " ++ url) (List.head (List.reverse (String.split "/" url)))
@@ -40,7 +40,13 @@ type alias Model =
     , content : String
     , mainNav : Navigation }
 
-type alias Navigation = List String
+type alias Navigation = List NavigationItem
+
+type alias NavigationItem =
+    { version: String
+    , slug : String
+    , title : String
+    }       
 
 init : Result String String -> (Model, Cmd Msg)
 init slug =
@@ -51,6 +57,7 @@ init slug =
 type Msg
     = GetDocument
     | FetchSucceed QueryResult
+    | FetchNavigation QueryResult
     | FetchFail Http.Error
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -58,12 +65,16 @@ update msg model =
     case msg of
         GetDocument ->
             (model, getDocumentBySlug model.slug)
+
         FetchSucceed queryResult ->
             case List.head queryResult of
-                -- Just m -> ({ m | mainNav = model.mainNav }, Cmd.none)
                 Just item -> let newModel = toModel item
-                             in ( { newModel | mainNav = model.mainNav }, Cmd.none )
+                             in ( { newModel | mainNav = model.mainNav }, getNavigation newModel.id )
                 Nothing -> (Model model.id model.version model.slug "Not found" "The specified document was not found" model.mainNav, Cmd.none)
+
+        FetchNavigation queryResult ->
+            ( { model | mainNav = List.map toNavigationItem queryResult }, Cmd.none )
+
         FetchFail _ ->
             (model, Cmd.none)
 
@@ -81,17 +92,14 @@ view model =
         [ a [href "#/documentation"] [
             h1 [] [text "bit-lang documentation v0.0"]
           ]
-        , menu
+        , mainNav model.mainNav
         , h2 [class "document-title"] [text model.title]
         , div [] [ Markdown.toHtml [] model.content ]
         ]
 
-menu =
+mainNav items =
     ul [class "top-navigation"]
-        [ li [] [a [href "#/language"] [text "Language"]]
-        , li [] [a [href "#/modules"] [text "Modules"]]
-        , li [] [a [href "#/examples"] [text "Examples"]]
-  ]
+        (List.map ( \l -> li [] [a [href (toUrl l.slug)] [text l.title]] ) items)
 
 -- SUBSCRIPTIONS
 
@@ -113,7 +121,7 @@ getDocumentRoot =
 
 getNavigation : String -> Cmd Msg
 getNavigation rootId =
-    Task.perform FetchFail FetchSucceed (Http.get queryResultDecoder (getDocumentsQuery [("fields.parent.sys.id", rootId), ("include", "0")]))
+    Task.perform FetchFail FetchNavigation (Http.get queryResultDecoder (getDocumentsQuery [("fields.parent.sys.id", rootId), ("include", "0")]))
 
 getDocumentBySlug : String -> Cmd Msg
 getDocumentBySlug slug =
@@ -161,3 +169,6 @@ fieldsDecoder =
 
 toModel : ResultItem -> Model
 toModel result = Model result.sys.id result.fields.version result.fields.slug result.fields.title result.fields.content []
+
+toNavigationItem : ResultItem -> NavigationItem
+toNavigationItem result = NavigationItem result.fields.version result.fields.slug result.fields.title
