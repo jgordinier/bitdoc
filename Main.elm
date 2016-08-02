@@ -39,7 +39,7 @@ type alias Model =
 
 init : Result String String -> (Model, Cmd Msg)
 init slug =
-    ( Model "documentation" "Loading" "Please wait...", getDocumentBySlug "documentation" )
+    ( Model "" "Loading" "Please wait...", getDocumentRoot )
 
 type alias DocumentFields =
     { title : String
@@ -106,9 +106,16 @@ access_token = "eb3f72d5bce55840bd6905e941091ff435d9005d1c29e1906c70ad384e4a2693
 space = "3on7pmzbo8hd"
 contentful = "https://cdn.contentful.com/spaces/" ++ space ++ "/"
 
+getDocumentsQuery params =
+    Http.url (contentful ++ "entries/") (List.append [("access_token", access_token), ("content_type", "document")] params)
+
+getDocumentRoot : Cmd Msg
+getDocumentRoot =
+    Task.perform FetchFail FetchSucceed (Http.get queryDocumentDecoder (getDocumentsQuery [("fields.parent[exists]", "false"), ("include", "0"), ("order", "-fields.version")]))
+
 getDocumentBySlug : String -> Cmd Msg
 getDocumentBySlug slug =
-    Task.perform FetchFail FetchSucceed (Http.get queryDocumentDecoder (Http.url (contentful ++ "entries/") [("access_token", access_token), ("content_type", "document"), ("fields.slug", slug), ("include", "0"), ("limit", "1")]))
+    Task.perform FetchFail FetchSucceed (Http.get queryDocumentDecoder (getDocumentsQuery [("fields.slug", slug), ("include", "0"), ("limit", "1")]))
 
 documentDecoder : Json.Decoder DocumentFields
 documentDecoder =
