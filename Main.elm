@@ -106,18 +106,51 @@ urlUpdate urlResult model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ a [href "#/documentation"] [
-            h1 [] [text "bit-lang documentation v0.0"]
-          ]
-        , navigation "main-navigation" model.mainNav
-        , navigation "sub-navigation" model.subNav
-        , h2 [class "document-title"] [text model.title]
-        , div [] [ Markdown.toHtml [] model.content ]
+    div [class "main row"]
+        [ div [id "left", class "col-sm-2"]
+              [ a [href "#/documentation", class "title"] [text "Bit"]
+              , navigation "main-navigation" model.mainNav
+              , navigation "sub-navigation" model.subNav
+              ]
+        , div [id "right", class "col-sm-10"]
+              [ header []
+                [ h1 [] [text "Bit v0.1 Documentation"]
+                , a [href "#/index"] [text "Index"]
+                , text " | "
+                , a [href (getDocumentQuery model.id)] [text "View as JSON"]
+                , hr [] []
+--                , h2 [] [text "Table of Contents"]
+--                , toc
+                ]
+              , h1 [class "document-title"] [text model.title]
+              , div [class "content"] [ Markdown.toHtml [] model.content ]
+              ]
+        ]
+
+toc =
+    ul [class "toc"]
+        [ li [] 
+            [ a [] [text "String"]
+            , ul [] 
+                [ li [] 
+                    [ a [] [text "Basics"]
+                    , ul []
+                        [ li [] [a [] [text "String.isEmpty"]]
+                        ]
+                    ]
+                , li []
+                    [ a [] [text "Building and Splitting"]
+                    , ul []
+                        [ li [] [a [] [text "String.cons"]]
+                        ]
+                    ]
+                ]
+            ]
         ]
 
 navigation className items =
-    ul [class className]
+    let hidden = if (List.isEmpty items) then " hidden" else ""
+    in ul [class (className ++ " nav nav-stacked" ++ hidden)]
         (List.map ( \l -> li [] [a [href (toUrl l.slug)] [text l.title]] ) items)
 
 -- SUBSCRIPTIONS
@@ -133,6 +166,9 @@ contentful = "https://cdn.contentful.com/spaces/" ++ space ++ "/"
 
 getDocumentsQuery params =
     Http.url (contentful ++ "entries/") (List.append [("access_token", access_token), ("content_type", "document")] params)
+
+getDocumentQuery id =
+    Http.url (contentful ++ "entries/" ++ id) [("access_token", access_token)]
 
 getDocumentRoot : Cmd Msg
 getDocumentRoot =

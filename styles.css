@@ -1,0 +1,146 @@
+/* Make both columns 100% height */
+html, body, #bitdoc, .main, #left, #right {
+    height: 100%;
+}
+
+#bitdoc h1 {
+    font-weight: 700;
+    line-height: 72px;
+}
+
+/* Main fonts and their colors */
+#bitdoc body {
+    font-family: "Lato", "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Verdana, Tahoma, sans-serif;
+    color: #333;
+}
+
+/* Left column colors */
+#left {
+    color: #ddd;
+    background: #333;
+}
+
+/* Left column padding */
+#left {
+    padding: 0 20px;
+}
+
+/* Hide left menu on sm screen size */
+@media (max-width: 768px) {
+    #left {
+        display: none;
+    }
+}
+
+/* Increase font size on sm screen size */
+@media (max-width: 768px) {
+    #bitdoc {
+        font-size: 1.5em;
+    }
+    #bitdoc h1, #bitdoc h2, #bitdoc h3, #bitdoc h4, #bitdoc h5, #bitdoc h6 {
+        font-size: 2.5em;
+    }
+    #right .content {
+        font-size: 2.5em;
+    }
+}
+
+
+/* Remove margin top on first h1 */
+#right header h1 {
+    margin-top: 0;
+}
+
+/* Color of the hr element in right column */
+#right hr {
+    border-color: #333;
+}
+
+/* Color of the links in the right column */
+#right a {
+    color: rgb(67, 133, 61);
+}
+
+#right a:hover {
+    background-color: rgb(67, 133, 61);
+    color: white;
+}
+
+#right .content {
+    font-size: 1.3em;
+}
+
+#right code {
+    font-family: Monaco,Consolas,"Lucida Console",monospace;
+    color: #3182bd;
+}
+
+#right code.lang-elm {
+    font-size: 1.25em;
+}
+
+/* Font size of toc title */
+#right header h2 {
+    font-size: 1.25em;
+}
+
+#right ul {
+    list-style-type: square;
+}
+
+#right ul.toc li {
+    padding-top: 5px;
+    padding-bottom: 0px;
+}
+
+#right ul.toc ul {
+}
+
+/* Make right scrollable */
+#right {
+    overflow-y: scroll;
+}
+
+/* Right column padding */
+#right {
+    padding: 0 36px;
+}
+
+/* Make left column links same color as text */
+#left a {
+    color: inherit;
+}
+
+/* Remove nav items horizontal padding */
+#left .nav > li > a {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* Remove irritating hover effect */
+#left .nav > li > a:hover {
+    background-color: inherit;
+}
+
+#left .nav > li > a:focus {
+    background-color: inherit;
+    color: rgb(67, 133, 61);
+    text-decoration: underline;
+}
+
+.main-navigation {
+    padding-bottom: 10px;
+}
+
+.sub-navigation {
+    border-top: 1px solid rgb(112, 112, 112);
+    padding-top: 10px;
+}
+
+/* make title fat */
+.title {
+    font-size: 23px;
+    font-weight: bold;
+    margin: 23px 0;
+    display: block;
+}
