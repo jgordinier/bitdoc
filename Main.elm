@@ -9,6 +9,7 @@ import Markdown
 import Json.Decode as Json
 import Json.Decode exposing ((:=))
 import Task exposing (..)
+import TableOfContents exposing (..)
 
 main =
     Navigation.program urlParser
@@ -38,6 +39,7 @@ type alias Model =
     , slug : String
     , title : String
     , content : String
+    , toc : TableOfContents.Model
     , mainNav : Navigation
     , subNav : Navigation
     }
@@ -52,7 +54,7 @@ type alias NavigationItem =
 
 init : Result String String -> (Model, Cmd Msg)
 init slug =
-    ( Model "" "" "" "Loading" "Please wait..." [] [], getDocumentRoot )
+    ( Model "" "" "" "Loading" "Please wait..." (TableOfContents.init "" "") [] [], getDocumentRoot )
 
 -- UPDATE
 
@@ -72,7 +74,7 @@ update msg model =
             case List.head queryResult of
                 Just item -> let newModel = toModel item
                              in ( { newModel | mainNav = model.mainNav, subNav = model.subNav }, getNavigation newModel.id )
-                Nothing -> (Model model.id model.version model.slug "Not found" "The specified document was not found" model.mainNav model.subNav, Cmd.none)
+                Nothing -> (Model model.id model.version model.slug "Not found" "The specified document was not found" model.toc model.mainNav model.subNav, Cmd.none)
 
         FetchNavigation queryResult ->
             let newMenu = List.map toNavigationItem queryResult
@@ -119,39 +121,22 @@ view model =
                 , text " | "
                 , a [href (getDocumentQuery model.id)] [text "View as JSON"]
                 , hr [] []
---                , h2 [] [text "Table of Contents"]
---                , toc
+                , h2 [] [text "Table of Contents"]
+                , viewTableOfContents model.toc
                 ]
               , h1 [class "document-title"] [text model.title]
               , div [class "content"] [ Markdown.toHtml [] model.content ]
               ]
         ]
 
-toc =
-    ul [class "toc"]
-        [ li [] 
-            [ a [] [text "String"]
-            , ul [] 
-                [ li [] 
-                    [ a [] [text "Basics"]
-                    , ul []
-                        [ li [] [a [] [text "String.isEmpty"]]
-                        ]
-                    ]
-                , li []
-                    [ a [] [text "Building and Splitting"]
-                    , ul []
-                        [ li [] [a [] [text "String.cons"]]
-                        ]
-                    ]
-                ]
-            ]
-        ]
-
 navigation className items =
     let hidden = if (List.isEmpty items) then " hidden" else ""
     in ul [class (className ++ " nav nav-stacked" ++ hidden)]
         (List.map ( \l -> li [] [a [href (toUrl l.slug)] [text l.title]] ) items)
+
+viewTableOfContents : TableOfContents.Model -> Html Msg
+viewTableOfContents model =
+    App.map (\_ -> GetDocument) (TableOfContents.view model)
 
 -- SUBSCRIPTIONS
 
@@ -223,7 +208,7 @@ fieldsDecoder =
         ( "content" := Json.string )
 
 toModel : ResultItem -> Model
-toModel result = Model result.sys.id result.fields.version result.fields.slug result.fields.title result.fields.content [] []
+toModel result = Model result.sys.id result.fields.version result.fields.slug result.fields.title result.fields.content (TableOfContents.init result.fields.title result.fields.content) [] []
 
 toNavigationItem : ResultItem -> NavigationItem
 toNavigationItem result = NavigationItem result.fields.version result.fields.slug result.fields.title
