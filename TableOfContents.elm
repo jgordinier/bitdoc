@@ -1,5 +1,6 @@
-module TableOfContents exposing (Model, TocItem, Msg, init, update, view, parseInput)
+module TableOfContents exposing (Model, TocItem, init, view)
 
+import Debug
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Regex exposing (..)
@@ -16,12 +17,15 @@ type alias TocItem =
     , nodes : Model
     }
 
+slugit : String -> String
+slugit heading = String.toLower (replace All (regex "[^\\w]") (\_ -> "") heading) 
+
 tocify : Int -> String -> TocItem
 tocify level heading =
     TocItem 
         level 
         (replace All (regex "^#+\\s+") (\_ -> "") heading)
-        (replace All (regex "[^\\w]") (\_ -> "") heading) 
+        (slugit heading) 
         (Model [])
 
 init: String -> String -> Model
@@ -29,24 +33,21 @@ init rootHeading content =
     let root = tocify 1 rootHeading
     in Model (parseToModel (parseInput content) root)
 
+
+{-
+Use this to annotate the HTML to match the table of contents
+annotate : Html a -> Html a
+annotate node =
+    case node.tag of
+        "h1" -> { node | children = (a [name "headline"] [text "#"]) :: node.children }
+        "h2" -> { node | children = (a [name "headline"] [text "#"]) :: node.children }
+        -- and so on...
+        _ -> { node | children = List.map annotate node.children }
+
+-}
+
 -- UPDATE
 
-type Msg = String
-
-update : String -> TocItem -> Model
-update msg model = 
-    Model (parseToModel (parseInput msg) model)
-
-{- Accepts a markdown string and results a list like this
-   # Top heading
-   ## Section heading
-   ### Sub heading
-   ### Sub heading
-   ## Section heading
-   ## Section heading
-   ### Sub heading
-   # Top heading
--}
 parseInput : String -> List String
 parseInput input =
     -- can't use regex because of multiline option is missingin Elm
@@ -97,11 +98,11 @@ unbox : Model -> List TocItem
 unbox model =
     case model of Model m -> m
 
-view : Model -> Html Msg
+view : Model -> Html String
 view model =
     ul [class "toc"] (List.map renderToc (unbox model))
         
 
-renderToc : TocItem -> Html Msg
+renderToc : TocItem -> Html String
 renderToc m =
-        li [] [ a [href m.slug] [text m.heading], ul [] (List.map renderToc (unbox m.nodes)) ]
+        li [] [ text m.heading, ul [] (List.map renderToc (unbox m.nodes)) ]
