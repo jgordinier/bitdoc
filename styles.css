@@ -137,6 +137,18 @@ html, body, #bitdoc, .main, #left, #right {
     padding-top: 10px;
 }
 
+/* style of search input field */
+input.search {
+    border: 1px solid rgb(112, 112, 112);
+    color: #333;
+    border-radius: 2px;
+}
+
+/* put some quotes around search query */
+.search-result-query:before, .search-result-query:after {
+    content: "\"";
+}
+
 /* make title fat */
 .title {
     font-size: 23px;

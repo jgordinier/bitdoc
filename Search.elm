@@ -1,4 +1,4 @@
---module Search exposing ()
+module Search exposing (Model, init, update, Msg, viewSearchInput, viewSearchResult)
 
 import Html exposing (..)
 import Html.App as App
@@ -23,6 +23,7 @@ main =
 
 type alias Model =
     { query : String
+    , count : Int
     , result : List SearchResultItem
     }
 
@@ -34,7 +35,7 @@ type alias SearchResultItem =
     }
 
 init : (Model, Cmd Msg)
-init = (Model "" [], Cmd.none)
+init = (Model "" 0 [], Cmd.none)
 
 -- UPDATE
 
@@ -59,9 +60,11 @@ update msg model =
 updateHelper : Model -> Contentful.Msg -> (Model, Cmd Msg)
 updateHelper model msg =
     case msg of
-        QuerySucceed result ->
-            ( { model | result = (mapResult result) }, Cmd.none)
-        QueryFail _ ->
+        DocumentQuerySucceed result ->
+            ( { model | count = List.length result, result = (mapResult result) }, Cmd.none)
+        DocumentQueryFail _ ->
+            ( model, Cmd.none )
+        _ ->
             ( model, Cmd.none )
 
 
@@ -123,23 +126,25 @@ targetDecoder = Json.object1 TargetEvent ( "value" := Json.string )
 view : Model -> Html Msg
 view model =
     div []
-        [ input [ placeholder "Search", value model.query, onKeyUp keyPress ] []
-        , viewSearchResult model
+        [ viewSearchInput model
+        , if model.count > 0 then viewSearchResult model else div [] []
         ]
+
+viewSearchInput : Model -> Html Msg
+viewSearchInput model =
+    input [ class "search", placeholder "Search", value model.query, onKeyUp keyPress ] []
+
 
 viewSearchResult : Model -> Html Msg
 viewSearchResult model =
-    if (List.length model.result) > 0 then
-        div [class "search-result"]
-        [ h1 [class "search-result-title"]
-          [ span [class "search-result-number"] [text (toString (List.length model.result))]
-          , text " results matching "
-          , span [class "search-result-query"] [text model.query]
-          ]
-        , ul [class "search-result-items"] (List.map viewSearchResultItem model.result)
-        ]
-    else
-        div [] []
+    div [class "search-result"]
+    [ h1 [class "search-result-title"]
+      [ span [class "search-result-number"] [text (toString model.count)]
+      , text " results matching "
+      , span [class "search-result-query"] [text model.query]
+      ]
+    , ul [class "search-result-items"] (List.map viewSearchResultItem model.result)
+    ]
 
 viewSearchResultItem : SearchResultItem -> Html Msg
 viewSearchResultItem item =

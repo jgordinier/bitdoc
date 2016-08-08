@@ -7,6 +7,7 @@ import Navigation
 import String
 import TableOfContents exposing (..)
 import Contentful exposing (..)
+import Search
 
 main =
     Navigation.program urlParser
@@ -39,6 +40,7 @@ type alias Model =
     , toc : TableOfContents.Model
     , mainNav : Navigation
     , subNav : Navigation
+    , search : Search.Model
     }
 
 type alias Navigation = List NavigationItem
@@ -50,20 +52,21 @@ type alias NavigationItem =
     }       
 
 toModel : ResultItem -> Model
-toModel result = Model result.sys.id result.fields.version result.fields.slug result.fields.title result.fields.content (TableOfContents.init result.fields.title result.fields.content) [] []
+toModel result = Model result.sys.id result.fields.version result.fields.slug result.fields.title result.fields.content (TableOfContents.init result.fields.title result.fields.content) [] [] (Search.Model "" 0 [])
 
 toNavigationItem : ResultItem -> NavigationItem
 toNavigationItem result = NavigationItem result.fields.version result.fields.slug result.fields.title
 
 init : Result String String -> (Model, Cmd Msg)
 init slug =
-    ( Model "" "" "" "Loading" "Please wait..." (TableOfContents.init "" "") [] [], Cmd.map ContentfulMsg getDocumentRoot )
+    ( Model "" "" "" "Loading" "Please wait..." (TableOfContents.init "" "") [] [] (Search.Model "" 0 []), Cmd.map ContentfulMsg getDocumentRoot )
 
 -- UPDATE
 
 type Msg
     = GetDocument
     | ContentfulMsg Contentful.Msg
+    | SearchMsg Search.Msg
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -73,6 +76,10 @@ update msg model =
 
         ContentfulMsg subMsg ->
             ( contentfulUpdateHelper model subMsg )
+
+        SearchMsg subMsg ->
+            let (searchModel, searchCmd) = Search.update subMsg model.search 
+            in ( { model | search = searchModel }, Cmd.map SearchMsg searchCmd )
 
 contentfulUpdateHelper : Model -> Contentful.Msg -> (Model, Cmd Msg)
 contentfulUpdateHelper model msg =
@@ -108,7 +115,6 @@ contentfulUpdateHelper model msg =
         NavigationQueryFail _ ->
             ( model, Cmd.none )
 
-
 urlUpdate : (Result String String) -> Model -> (Model, Cmd Msg)
 urlUpdate urlResult model =
     case urlResult of
@@ -122,10 +128,16 @@ view model =
     div [class "main row"]
         [ div [id "left", class "col-sm-2"]
               [ a [href "#/documentation", class "title"] [text "Bit"]
+              , viewSearchInput model.search
               , navigation "main-navigation" model.mainNav
               , navigation "sub-navigation" model.subNav
               ]
-        , div [id "right", class "col-sm-10"]
+        , if model.search.count > 0 then
+             div [id "right", class "col-sm-10"]
+             [ viewSearchResult model.search
+             ]
+          else
+              div [id "right", class "col-sm-10"]
               [ header []
                 [ h1 [] [text "Bit v0.1 Documentation"]
                 , a [href "#/index"] [text "Index"]
@@ -148,6 +160,14 @@ navigation className items =
 viewTableOfContents : TableOfContents.Model -> Html Msg
 viewTableOfContents model =
     App.map (\_ -> GetDocument) (TableOfContents.view model)
+
+viewSearchInput : Search.Model -> Html Msg
+viewSearchInput model =
+    App.map (\msg -> SearchMsg msg) (Search.viewSearchInput model)
+
+viewSearchResult : Search.Model -> Html Msg
+viewSearchResult model =
+    App.map (\msg -> SearchMsg msg) (Search.viewSearchResult model)
 
 -- SUBSCRIPTIONS
 
