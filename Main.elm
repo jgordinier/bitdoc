@@ -2,6 +2,7 @@ import Html exposing (..)
 import Html.App as App
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Markdown
 import Navigation
 import String
 import TableOfContents exposing (..)
@@ -56,32 +57,39 @@ toNavigationItem result = NavigationItem result.fields.version result.fields.slu
 
 init : Result String String -> (Model, Cmd Msg)
 init slug =
-    ( Model "" "" "" "Loading" "Please wait..." (TableOfContents.init "" "") [] [], getDocumentRoot )
+    ( Model "" "" "" "Loading" "Please wait..." (TableOfContents.init "" "") [] [], Cmd.map ContentfulMsg getDocumentRoot )
 
 -- UPDATE
 
 type Msg
     = GetDocument
-    | FetchSucceed QueryResult
-    | FetchNavigation QueryResult
-    | FetchFail Http.Error
+    | ContentfulMsg Contentful.Msg
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
         GetDocument ->
-            (model, getDocumentBySlug model.slug)
+            (model, Cmd.map ContentfulMsg (Contentful.getDocumentBySlug model.slug) )
 
-        FetchSucceed queryResult ->
-            case List.head queryResult of
+        ContentfulMsg subMsg ->
+            ( contentfulUpdateHelper model subMsg )
+
+contentfulUpdateHelper : Model -> Contentful.Msg -> (Model, Cmd Msg)
+contentfulUpdateHelper model msg =
+    case msg of
+        DocumentQuerySucceed result ->
+            case List.head result of
                 Just item -> let newModel = toModel item
-                             in ( { newModel | mainNav = model.mainNav, subNav = model.subNav }, getNavigation newModel.id )
-                Nothing -> (Model model.id model.version model.slug "Not found" "The specified document was not found" model.toc model.mainNav model.subNav, Cmd.none)
+                             in ( { newModel | mainNav = model.mainNav, subNav = model.subNav }, Cmd.map ContentfulMsg (Contentful.getNavigation newModel.id) )
+                Nothing -> ( { model | title = "Not found", content = "The specified document was not found" }, Cmd.none )
 
-        FetchNavigation queryResult ->
-            let newMenu = List.map toNavigationItem queryResult
+        DocumentQueryFail _ ->
+            ( model, Cmd.none )
+
+        NavigationQuerySucceed result ->
+            let newMenu = List.map toNavigationItem result
             in
-                if List.isEmpty queryResult then
+                if List.isEmpty result then
                    -- do not clear sub menu when there is no further sub navigation
                    ( model, Cmd.none )
 
@@ -97,8 +105,9 @@ update msg model =
                             -- all first level navigations should display their sub pages in sub nav
                             ( { model | subNav = newMenu }, Cmd.none )
 
-        FetchFail _ ->
-            (model, Cmd.none)
+        NavigationQueryFail _ ->
+            ( model, Cmd.none )
+
 
 urlUpdate : (Result String String) -> Model -> (Model, Cmd Msg)
 urlUpdate urlResult model =
@@ -121,7 +130,7 @@ view model =
                 [ h1 [] [text "Bit v0.1 Documentation"]
                 , a [href "#/index"] [text "Index"]
                 , text " | "
-                , a [href (getDocumentQuery model.id)] [text "View as JSON"]
+                , a [href (Contentful.getDocumentQuery model.id)] [text "View as JSON"]
                 , hr [] []
                 , h2 [] [text "Table of Contents"]
                 , viewTableOfContents model.toc

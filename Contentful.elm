@@ -1,4 +1,4 @@
-module Contentful exposing (QueryResult, ResultItem, getDocumentRoot, getNavigation, getDocumentBySlug)
+module Contentful exposing (QueryResult, ResultItem, Msg(..), getDocumentQuery, getDocumentRoot, getNavigation, getDocumentBySlug, search)
 
 import Http
 import Markdown
@@ -25,6 +25,14 @@ type alias FieldsResult =
     , content : String
     }       
 
+-- UPDATE
+
+type Msg
+    = DocumentQuerySucceed QueryResult
+    | DocumentQueryFail Http.Error
+    | NavigationQuerySucceed QueryResult
+    | NavigationQueryFail Http.Error
+
 -- HTTP
 access_token = "eb3f72d5bce55840bd6905e941091ff435d9005d1c29e1906c70ad384e4a2693"
 space = "3on7pmzbo8hd"
@@ -38,16 +46,19 @@ getDocumentQuery id =
 
 getDocumentRoot : Cmd Msg
 getDocumentRoot =
-    Task.perform FetchFail FetchSucceed (Http.get queryResultDecoder (getDocumentsQuery [("fields.parent[exists]", "false"), ("include", "0"), ("order", "-fields.version")]))
+    Task.perform DocumentQueryFail DocumentQuerySucceed (Http.get queryResultDecoder (getDocumentsQuery [("fields.parent[exists]", "false"), ("include", "0"), ("order", "-fields.version")]))
 
 getNavigation : String -> Cmd Msg
 getNavigation rootId =
-    Task.perform FetchFail FetchNavigation (Http.get queryResultDecoder (getDocumentsQuery [("fields.parent.sys.id", rootId), ("include", "0")]))
+    Task.perform NavigationQueryFail NavigationQuerySucceed (Http.get queryResultDecoder (getDocumentsQuery [("fields.parent.sys.id", rootId), ("include", "0")]))
 
 getDocumentBySlug : String -> Cmd Msg
 getDocumentBySlug slug =
-    Task.perform FetchFail FetchSucceed (Http.get queryResultDecoder (getDocumentsQuery [("fields.slug", slug), ("include", "0"), ("limit", "1")]))
+    Task.perform DocumentQueryFail DocumentQuerySucceed (Http.get queryResultDecoder (getDocumentsQuery [("fields.slug", slug), ("include", "0"), ("limit", "1")]))
 
+search : String -> Cmd Msg
+search query =
+    Task.perform DocumentQueryFail DocumentQuerySucceed (Http.get queryResultDecoder (getDocumentsQuery [("query", query), ("include", "0")]))
 
 -- JSON decoding
 
