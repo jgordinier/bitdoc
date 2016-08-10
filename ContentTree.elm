@@ -19,7 +19,11 @@ import Html.App as App
 import Html.Attributes exposing (..)
 import Contentful exposing (Msg(DocumentQuerySucceed, DocumentQueryFail))
 
+
+
+-----------------------------------------------------------------------------------------
 -- MODEL
+-----------------------------------------------------------------------------------------
 
 type Model = Model (List NavigationItem)
 
@@ -51,7 +55,10 @@ init : (Model, Cmd Msg)
 init = (Model [], Cmd.map SubMsg Contentful.getNavigationTree)
 
 
+
+-----------------------------------------------------------------------------------------
 -- UPDATE
+-----------------------------------------------------------------------------------------
 
 {-| Msg:
 
@@ -179,7 +186,11 @@ buildContentTree result =
 
     in Model (buildContentTree' rootDocuments)
 
+
+
+-----------------------------------------------------------------------------------------
 -- VIEW
+-----------------------------------------------------------------------------------------
 
 {-| role:
 
