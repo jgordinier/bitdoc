@@ -109,7 +109,7 @@ keyPress event =
         13 -> Search
         -- escape
         27 -> Clear
-        -- other
+        -- other, this is really handled by `onInput Query`
         _ -> Query event.target.value
 
 onKeyUp : (KeyEvent -> msg) -> Attribute msg
@@ -130,7 +130,7 @@ view model =
 
 viewSearchInput : Model -> Html Msg
 viewSearchInput model =
-    input [ class "search", placeholder "Type to Search", value model.query, onKeyUp keyPress ] []
+    input [ class "search", placeholder "Type to Search", value model.query, onInput Query, onKeyUp keyPress ] []
 
 
 viewSearchResult : Model -> Html Msg
