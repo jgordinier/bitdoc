@@ -7,6 +7,7 @@ import Navigation
 import String
 import TableOfContents exposing (..)
 import Contentful exposing (..)
+import ContentTree
 import Search
 
 main =
@@ -19,9 +20,6 @@ main =
         }
 
 -- URL PARSERS
-
-toUrl : String -> String
-toUrl slug = "#/" ++ slug
 
 fromUrl : String -> (Result String String)
 fromUrl url = Result.fromMaybe ("Error parsing url: " ++ url) (List.head (List.reverse (String.split "/" url)))
@@ -38,34 +36,23 @@ type alias Model =
     , title : String
     , content : String
     , toc : TableOfContents.Model
-    , mainNav : Navigation
-    , subNav : Navigation
+    , nav : ContentTree.Model
     , search : Search.Model
     }
 
-type alias Navigation = List NavigationItem
-
-type alias NavigationItem =
-    { version: String
-    , slug : String
-    , title : String
-    }       
-
-toModel : ResultItem -> Model
-toModel result = Model result.sys.id result.fields.version result.fields.slug result.fields.title result.fields.content (TableOfContents.init result.fields.title result.fields.content) [] [] (Search.Model "" 0 [])
-
-toNavigationItem : ResultItem -> NavigationItem
-toNavigationItem result = NavigationItem result.fields.version result.fields.slug result.fields.title
-
 init : Result String String -> (Model, Cmd Msg)
 init slug =
-    ( Model "" "" "" "Loading" "Please wait..." (TableOfContents.init "" "") [] [] (Search.Model "" 0 []), Cmd.map ContentfulMsg getDocumentRoot )
+    let (contentTree, contentTreeInit) = ContentTree.init
+        cmd = Cmd.batch [ Cmd.map ContentTreeMsg contentTreeInit, Cmd.map ContentfulMsg getDocumentRoot ]
+
+    in ( Model "" "" "documentation" "Loading" "Please wait..." (TableOfContents.init "" "") contentTree (Search.Model "" 0 []), cmd )
 
 -- UPDATE
 
 type Msg
     = GetDocument
     | ContentfulMsg Contentful.Msg
+    | ContentTreeMsg ContentTree.Msg
     | SearchMsg Search.Msg
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -77,6 +64,10 @@ update msg model =
         ContentfulMsg subMsg ->
             ( contentfulUpdateHelper model subMsg )
 
+        ContentTreeMsg subMsg ->
+            let ( contentTreeModel, contentTreeCmd ) = ContentTree.update subMsg model.nav
+            in ( { model | nav = contentTreeModel }, Cmd.map ContentTreeMsg contentTreeCmd )
+
         SearchMsg subMsg ->
             let (searchModel, searchCmd) = Search.update subMsg model.search 
             in ( { model | search = searchModel }, Cmd.map SearchMsg searchCmd )
@@ -86,33 +77,21 @@ contentfulUpdateHelper model msg =
     case msg of
         DocumentQuerySucceed result ->
             case List.head result of
-                Just item -> let newModel = toModel item
-                             in ( { newModel | mainNav = model.mainNav, subNav = model.subNav }, Cmd.map ContentfulMsg (Contentful.getNavigation newModel.id) )
+                Just item -> ( { model
+                                | id = item.sys.id
+                                , version = item.fields.version
+                                , slug = item.fields.slug
+                                , title = item.fields.title
+                                , content = item.fields.content
+                                , toc = (TableOfContents.init item.fields.title item.fields.content)
+                                , nav = (fst (ContentTree.update ( ContentTree.Navigate item.fields.slug ) model.nav) )
+                                , search = (Search.Model "" 0 [])
+                               }, Cmd.none 
+                             )
+                
                 Nothing -> ( { model | title = "Not found", content = "The specified document was not found" }, Cmd.none )
 
         DocumentQueryFail _ ->
-            ( model, Cmd.none )
-
-        NavigationQuerySucceed result ->
-            let newMenu = List.map toNavigationItem result
-            in
-                if List.isEmpty result then
-                   -- do not clear sub menu when there is no further sub navigation
-                   ( model, Cmd.none )
-
-                else
-                    if List.isEmpty model.mainNav then
-                        -- first populate the main nav before populating sub nav
-                        ( { model | mainNav = newMenu }, Cmd.none )
-                    else
-                        if newMenu == model.mainNav then
-                           -- do not populate sub nav with same content as in main nav
-                           ( { model | subNav = [] }, Cmd.none )
-                        else
-                            -- all first level navigations should display their sub pages in sub nav
-                            ( { model | subNav = newMenu }, Cmd.none )
-
-        NavigationQueryFail _ ->
             ( model, Cmd.none )
 
 urlUpdate : (Result String String) -> Model -> (Model, Cmd Msg)
@@ -129,8 +108,7 @@ view model =
         [ div [id "left", class "col-sm-2"]
               [ a [href "#/documentation", class "title"] [text "Bit"]
               , viewSearchInput model.search
-              , navigation "main-navigation" model.mainNav
-              , navigation "sub-navigation" model.subNav
+              , viewNavigation model.nav
               ]
         , if model.search.count > 0 then
              div [id "right", class "col-sm-10"]
@@ -152,10 +130,8 @@ view model =
               ]
         ]
 
-navigation className items =
-    let hidden = if (List.isEmpty items) then " hidden" else ""
-    in ul [class (className ++ " nav nav-stacked" ++ hidden)]
-        (List.map ( \l -> li [] [a [href (toUrl l.slug)] [text l.title]] ) items)
+viewNavigation nav =
+    App.map (\msg -> ContentTreeMsg msg) (ContentTree.view nav)
 
 viewTableOfContents : TableOfContents.Model -> Html Msg
 viewTableOfContents model =

@@ -64,8 +64,6 @@ updateHelper model msg =
             ( { model | count = List.length result, result = (mapResult result) }, Cmd.none)
         DocumentQueryFail _ ->
             ( model, Cmd.none )
-        _ ->
-            ( model, Cmd.none )
 
 
 mapResult : Contentful.QueryResult ->  List SearchResultItem
@@ -132,7 +130,7 @@ view model =
 
 viewSearchInput : Model -> Html Msg
 viewSearchInput model =
-    input [ class "search", placeholder "Search", value model.query, onKeyUp keyPress ] []
+    input [ class "search", placeholder "Type to Search", value model.query, onKeyUp keyPress ] []
 
 
 viewSearchResult : Model -> Html Msg

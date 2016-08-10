@@ -32,7 +32,7 @@ html, body, #bitdoc, .main, #left, #right {
     }
 }
 
-/* Increase font size on sm screen size */
+/* Increase font size on sm screen size
 @media (max-width: 768px) {
     #bitdoc {
         font-size: 1.5em;
@@ -44,7 +44,7 @@ html, body, #bitdoc, .main, #left, #right {
         font-size: 2.5em;
     }
 }
-
+*/
 
 /* Remove margin top on first h1 */
 #right header h1 {
@@ -111,10 +111,18 @@ html, body, #bitdoc, .main, #left, #right {
     color: inherit;
 }
 
-/* Remove nav items horizontal padding */
+/* Make some space between search and navigation */
+#left nav {
+    margin-top: 1em;
+}
+
+/* Make sure that the tree structure is visible */
+#left .nav > li {
+    padding-left: 10px;
+}
+
 #left .nav > li > a {
     padding-left: 0;
-    padding-right: 0;
 }
 
 /* Remove irritating hover effect */
@@ -122,7 +130,7 @@ html, body, #bitdoc, .main, #left, #right {
     background-color: inherit;
 }
 
-#left .nav > li > a:focus {
+#left .nav > li > a:focus, #left .nav > li.active > a {
     background-color: inherit;
     color: rgb(67, 133, 61);
     text-decoration: underline;

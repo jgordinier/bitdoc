@@ -1,4 +1,4 @@
-module Contentful exposing (QueryResult, ResultItem, Msg(..), getDocumentQuery, getDocumentRoot, getNavigation, getDocumentBySlug, search)
+module Contentful exposing (QueryResult, ResultItem, Msg(..), getDocumentQuery, getDocumentRoot, getNavigationTree, getDocumentBySlug, search)
 
 import Http
 import Markdown
@@ -23,6 +23,7 @@ type alias FieldsResult =
     , slug : String
     , version : String
     , content : String
+    , parent : Maybe SysResult
     }       
 
 -- UPDATE
@@ -30,8 +31,6 @@ type alias FieldsResult =
 type Msg
     = DocumentQuerySucceed QueryResult
     | DocumentQueryFail Http.Error
-    | NavigationQuerySucceed QueryResult
-    | NavigationQueryFail Http.Error
 
 -- HTTP
 access_token = "eb3f72d5bce55840bd6905e941091ff435d9005d1c29e1906c70ad384e4a2693"
@@ -48,9 +47,9 @@ getDocumentRoot : Cmd Msg
 getDocumentRoot =
     Task.perform DocumentQueryFail DocumentQuerySucceed (Http.get queryResultDecoder (getDocumentsQuery [("fields.parent[exists]", "false"), ("include", "0"), ("order", "-fields.version")]))
 
-getNavigation : String -> Cmd Msg
-getNavigation rootId =
-    Task.perform NavigationQueryFail NavigationQuerySucceed (Http.get queryResultDecoder (getDocumentsQuery [("fields.parent.sys.id", rootId), ("include", "0")]))
+getNavigationTree : Cmd Msg
+getNavigationTree =
+    Task.perform DocumentQueryFail DocumentQuerySucceed (Http.get queryResultDecoder (getDocumentsQuery [("include", "0")]))
 
 getDocumentBySlug : String -> Cmd Msg
 getDocumentBySlug slug =
@@ -77,10 +76,11 @@ sysDecoder = Json.object1 SysResult ( "id" := Json.string )
 
 fieldsDecoder : Json.Decoder FieldsResult
 fieldsDecoder =
-    Json.object4 FieldsResult
+    Json.object5 FieldsResult
         ( "title" := Json.string )
         ( "slug" := Json.string )
         ( "version" := Json.string )
         ( "content" := Json.string )
+        ( Json.maybe ( "parent" := Json.at ["sys"] sysDecoder ) )
 
 
