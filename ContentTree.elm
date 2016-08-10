@@ -1,4 +1,4 @@
-module ContentTree exposing (Model, NavigationItem, Msg(Navigate), init, update, view)
+module ContentTree exposing (Model, NavigationItem, Msg(Navigate), init, update, view, viewIndex)
 
 import Html exposing (..)
 import Html.App as App
@@ -118,7 +118,17 @@ viewNavigationItem item =
     [ a [ href ("#/" ++ item.slug) ] [ text item.title ]
     , viewNavigation item.children
     ]
-         
+
+viewIndex : Model -> Html Msg
+viewIndex model =
+    let viewIndex' : Model -> Html Msg
+        viewIndex' model =
+            ul [] (List.map viewIndexItem (unbox model))
+
+        viewIndexItem item =
+            li [] [ a [ href ("#/" ++ item.slug) ] [ text item.title ], viewIndex' item.children ]
+
+    in div [class "index"] [viewIndex' model]
 
 -- SUBSCRIPTIONS
 

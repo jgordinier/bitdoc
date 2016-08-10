@@ -115,20 +115,34 @@ view model =
              [ viewSearchResult model.search
              ]
           else
-              div [id "right", class "col-sm-10"]
-              [ header []
-                [ h1 [] [text "Bit v0.1 Documentation"]
-                , a [href "#/index"] [text "Index"]
-                , text " | "
-                , a [href (Contentful.getDocumentQuery model.id)] [text "View as JSON"]
-                , hr [] []
-                , h2 [] [text "Table of Contents"]
-                , viewTableOfContents model.toc
-                ]
-              , h1 [class "document-title"] [text model.title]
-              , div [class "content"] [ Markdown.toHtml [] model.content ]
-              ]
+              if model.slug == "index" then
+                 div [id "right", class "col-sm-10"]
+                 [ header []
+                    [ h1 [] [text "Bit v0.1 Documentation"]
+                    , hr [] []
+                    ]
+                 , h1 [class "document-title"] [text "Index"]
+                 , div [class "content"] [ viewIndex model.nav ]
+                 ]
+                    
+              else 
+                  div [id "right", class "col-sm-10"]
+                  [ header []
+                    [ h1 [] [text "Bit v0.1 Documentation"]
+                    , a [href "#/index"] [text "Index"]
+                    , text " | "
+                    , a [href (Contentful.getDocumentQuery model.id)] [text "View as JSON"]
+                    , hr [] []
+                    , h2 [] [text "Table of Contents"]
+                    , viewTableOfContents model.toc
+                    ]
+                  , h1 [class "document-title"] [text model.title]
+                  , div [class "content"] [ Markdown.toHtml [] model.content ]
+                  ]
         ]
+
+viewIndex nav =
+    App.map (\msg -> ContentTreeMsg msg) (ContentTree.viewIndex nav)
 
 viewNavigation nav =
     App.map (\msg -> ContentTreeMsg msg) (ContentTree.view nav)
