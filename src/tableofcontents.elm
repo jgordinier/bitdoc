@@ -3,11 +3,7 @@
     Summary: This module will take the Markdown content of a document and build a table
     of contents from its headlines.
 -}
-module TableOfContents exposing
-    ( Model
-    , init
-    , view
-    )
+module TableOfContents exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -97,7 +93,11 @@ parseInput input =
 -}
 getLevel : String -> Int
 getLevel input =
-    List.length (String.indexes "#" input)
+    Regex.find (AtMost 1) (Regex.regex "^#+") input
+    |> List.map .match
+    |> List.head
+    |> Maybe.withDefault ""
+    |> String.length
 
 {-| tail:
 
@@ -151,9 +151,9 @@ splitLevel level input =
 
 {-| parseToModel:
 
-    Take the list of headlines and turn it into a recursive TocItem tree structure.
+    Take the list of headings and turn it into a recursive TocItem tree structure.
 
-    @input: A list of headings still with thier `#` characters at the start of the string.
+    @input: A list of headings still with their `#` characters at the start of the string.
 
     @parent: The current TocItem that child heading should be apended to. This is the title
     of the document in the first call.
