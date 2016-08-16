@@ -32,19 +32,6 @@ html, body, #bitdoc, .main, #left, #right {
     }
 }
 
-/* Increase font size on sm screen size
-@media (max-width: 768px) {
-    #bitdoc {
-        font-size: 1.5em;
-    }
-    #bitdoc h1, #bitdoc h2, #bitdoc h3, #bitdoc h4, #bitdoc h5, #bitdoc h6 {
-        font-size: 2.5em;
-    }
-    #right .content {
-        font-size: 2.5em;
-    }
-}
-*/
 
 /* Remove margin top on first h1 */
 #right header h1 {
@@ -96,9 +83,11 @@ html, body, #bitdoc, .main, #left, #right {
 #right ul.toc ul {
 }
 
-/* Make right scrollable */
-#right {
-    overflow-y: scroll;
+@media (min-width: 767px) {
+    /* Make right scrollable on larger screens */
+    #right {
+        overflow-y: scroll;
+    }
 }
 
 /* Right column padding */
