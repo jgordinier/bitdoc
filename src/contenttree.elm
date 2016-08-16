@@ -12,6 +12,10 @@ module ContentTree exposing
     , update
     , view
     , viewIndex
+    , unbox
+    , tail
+    , setActive
+    , buildContentTree
     )
 
 import Html exposing (..)

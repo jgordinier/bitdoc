@@ -3,14 +3,7 @@
    Summary: This module is responsible for free text search of documents. It will query the Contentful
    API using the Contentful module, and present the result in a list.
 -}
-module Search exposing 
-    ( Model
-    , init
-    , update
-    , Msg
-    , viewSearchInput
-    , viewSearchResult
-    )
+module Search exposing (..)
 
 import Html exposing (..)
 import Html.App as App

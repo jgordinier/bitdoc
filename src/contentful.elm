@@ -6,12 +6,16 @@
 module Contentful exposing 
     ( QueryResult
     , ResultItem
+    , FieldsResult
+    , SysResult
     , Msg(..)
+    , getDocumentsQuery
     , getDocumentQuery
     , getDocumentRoot
     , getNavigationTree
     , getDocumentBySlug
     , search
+    , queryResultDecoder
     )
 
 import Http
