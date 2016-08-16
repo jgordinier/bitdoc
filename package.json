@@ -1,0 +1,25 @@
+{
+  "name": "bitdoc",
+  "version": "1.0.0",
+  "description": "A documentation application that reads content from Contentful CMS.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "node_modules/elm-test/bin/elm-test tests/Main.elm"
+  },
+  "author": "Mikael Lundin",
+  "license": "ISC",
+  "devDependencies": {
+    "bower": "^1.7.9",
+    "del": "^2.2.2",
+    "gulp": "^3.9.1",
+    "gulp-clean-css": "^2.0.12",
+    "gulp-concat": "^2.6.0",
+    "gulp-elm": "^0.5.0",
+    "gulp-gzip": "^1.4.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-uglify": "^2.0.0"
+  }
+}

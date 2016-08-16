@@ -1,0 +1,15 @@
+{
+  "name": "bitdoc",
+  "description": "A documentation application that reads content from Contentful CMS.",
+  "main": "index.js",
+  "authors": [
+    "Mikael Lundin"
+  ],
+  "license": "ISC",
+  "homepage": "",
+  "private": true,
+  "devDependencies": {
+    "highlightjs": "^9.6.0",
+    "bootstrap": "^3.3.7"
+  }
+}
